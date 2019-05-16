@@ -8,20 +8,27 @@ def classification_dataset(name):
     df = pd.DataFrame(data[0])
 
     df = df.dropna()
-    df['Node Status'] = df['Node Status'].dropna().map({b'B': 0, b'NB': 1 , b"'P NB'":2}).astype(int) # encoding
+    node_status_map = {b'B': 0, b'NB': 1 , b"'P NB'":2}
+    df['Node Status'] = df['Node Status'].dropna().map(node_status_map).astype(int) # encoding
+
+    class_map = {b"'NB-No Block'": 1, b"'No Block'": 2, b'Block': 0, b'NB-Wait': 3}
+    df['Class'] = df['Class'].dropna().map(class_map).astype(int) # encoding
+
     X = df.drop(['Class',], axis=1)
-    y = df.iloc[:, -1:].values
+    y = df.iloc[:, -1].values # array
+
     X2 = df.iloc[:, :-3].values
     return X,y
-
 X,y =  classification_dataset('OBS-Network-DataSet_2_Aug27.arff')
+print(X[:10], y[:10])
+
 # # Feature Scaling
 # sc = StandardScaler()
 # X_train = sc.fit_transform(X_train)
 # X_test = sc.transform(X_test)
 
 from sklearn.model_selection import train_test_split, GridSearchCV
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 42)
 
 clf = RFC(n_estimators=10, criterion='entropy', random_state=43 , oob_score=True,
           max_features="auto" ,)
