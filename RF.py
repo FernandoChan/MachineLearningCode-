@@ -4,7 +4,7 @@ from scipy.io import arff
 import pandas as pd
 import os
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support , mean_squared_error
-
+from sklearn import preprocessing
 import  logging
 logger = logging.getLogger('RF Train')
 def classification_dataset(name):
@@ -32,8 +32,11 @@ X,y =  classification_dataset('OBS-Network-DataSet_2_Aug27.arff')
 # X_train = sc.fit_transform(X_train)
 # X_test = sc.transform(X_test)
 
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV , KFold ,cross_val_score
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.33, random_state = 42)
+
+
+
 
 rfc_clf = RFC(n_estimators=100, criterion='gini', random_state=42 , oob_score=False,
           max_features="auto" ,)
@@ -49,9 +52,11 @@ params = {"n_estimators":[10,20,50,100,150] ,
         }
 
 metric = [accuracy_score, mean_squared_error]
+scaler = preprocessing.StandardScaler.fit(self=preprocessing.StandardScaler(), X = X_train)
+X_trans = scaler.transform(X_train)
+X_test_trans = scaler.transform(X_test)
 for classifier in clf:
     classifier.fit(X_train, y_train)
-
     pred_train = classifier.predict(X_train)
     pred_test = classifier.predict(X_test)
     train_acc = accuracy_score(y_train, pred_train)
@@ -61,15 +66,22 @@ for classifier in clf:
     train_acc = mean_squared_error(y_train, pred_train)
     test_acc = mean_squared_error(y_test, pred_test)
     print("The {2} has a train mse: {0:.4f}, test mse: {1:.4f}".format(train_acc, test_acc,classifier.__class__.__name__))
+
+    scores = cross_val_score(classifier, X , y , cv= 10 )
+    print("Cross Validate Score: %0.3f (+/- %0.4f)" % (scores.mean(), scores.std() * 2))
+
+    classifier.fit(X_trans, y_train)
+    print("Scaled X_train trained classifier has a accuracy of {0:4f}".format(accuracy_score(y_test, classifier.predict(X_test_trans))))
+    # classifier.score(X_test_trans, y_test)
+
     print()
 # from sklearn.utils.multiclass import type_of_target
 #
 logger.log(level=1, msg= "start to fit grid")
+
 # grid = GridSearchCV(cv = 10, estimator=rfc_clf , param_grid=params)
 # grid.fit(X_train, y_train)
 # sorted(grid.cv_results_.keys())
-
-grid = rfc_clf
 
 
 # Evaluation
